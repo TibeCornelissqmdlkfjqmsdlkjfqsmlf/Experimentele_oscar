@@ -1,0 +1,5 @@
+cf ~ central frequency
+sf ~ spanning frequency
+dbm
+N ~ numeric = aantal frames
+df ~ decimating factor
