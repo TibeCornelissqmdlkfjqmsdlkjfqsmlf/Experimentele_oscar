@@ -6,6 +6,17 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
+# fit data between 0-1 linear converion factor
+def normalize( data ):
+    min_val = min( data )
+    max_val = max( data )
+    diff = max_val - min_val
+
+    result = [ (d-min_val)/(diff) for d in data ]
+    return result
+    
+
+    
 
 def load_decimal_comma_stream(path: str | Path) -> np.ndarray:
     """
@@ -21,7 +32,39 @@ def load_decimal_comma_stream(path: str | Path) -> np.ndarray:
     vals = np.array([float(tok.replace(",", ".")) for tok in tokens], dtype=float)
     return vals
 
-fold_front = r"D:\Jelle_Tibe_Experimentele\ruwe_data\mod-mr\cf_2870-md_65-dbm_16-N_1-ds_600-mr_"
+to_plot = {
+    ("../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_",""): ["1","1,1","1,2","1,3","1,4","1,5","1,6","1,7","1,8","1,9","2","2,1","2,2","2,3","2,4","2,5","2,6","2,7","2,8","2,9","3"],
+}
+
+
+for (prefix, suffix), labels in to_plot.items():
+    folders = [Path(prefix + label + suffix) for label in labels]
+
+    for folder, f_label in zip(folders, labels):
+
+        odmr_path = os.path.join(folder, "odmr.txt")
+        sweep_path = os.path.join(folder, "sweep.txt")
+
+        if not os.path.exists(odmr_path) or not os.path.exists(sweep_path):
+            print(f"Missing files in {folder}")
+            continue
+
+        try:
+            x = load_decimal_comma_stream(sweep_path)
+            x_n = normalize(x)
+            y = load_decimal_comma_stream(odmr_path)
+            y_n = normalize(y)
+        except ValueError as e:
+            print(f"Skipping {folder}: {e}")
+            continue
+
+        if x.size != y.size:
+            print(f"Length mismatch in {folder}")
+            continue
+
+        plt.plot(x_n, y_n, linewidth=1, label=f"mr_{f_label}") 
+
+fold_front = "../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_"
 freq = ["1","1,1","1,2","1,3","1,4","1,5","1,6","1,7","1,8","1,9","2","2,1","2,2","2,3","2,4","2,5","2,6","2,7","2,8","2,9","3"]
 
 folders = [fold_front + f for f in freq ]
@@ -38,7 +81,9 @@ for folder, f_label in zip(folders, freq):
 
     try:
         x = load_decimal_comma_stream(sweep_path)
+        x_n = normalize(x)
         y = load_decimal_comma_stream(odmr_path)
+        y_n = normalize(y)
     except ValueError as e:
         print(f"Skipping {folder}: {e}")
         continue
@@ -47,7 +92,7 @@ for folder, f_label in zip(folders, freq):
         print(f"Length mismatch in {folder}")
         continue
 
-    plt.plot(x, y, linewidth=1, label=f"mr_{f_label}")
+    plt.plot(x_n, y_n, linewidth=1, label=f"mr_{f_label}")
 
 plt.xlabel("Frequency (same units as SWEEP file)")
 plt.ylabel("ODMR signal (same units as ODMR file)")
