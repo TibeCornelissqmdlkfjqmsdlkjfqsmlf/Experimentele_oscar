@@ -1,5 +1,6 @@
-cf ~ central frequency
-sf ~ spanning frequency
-dbm
-N ~ numeric = aantal frames
-df ~ decimating factor
+cf ~ central frequency (MHZ)
+md ~ modulation deviation (MHZ)
+dbm ~ amplitude 
+N ~ Number of sweeps
+ds ~ decimating size
+mr ~ modulation rate (HZ)
