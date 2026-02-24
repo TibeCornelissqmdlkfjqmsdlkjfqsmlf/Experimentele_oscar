@@ -20,7 +20,7 @@ def normalize( data ):
 
 def load_decimal_comma_stream(path: str | Path) -> np.ndarray:
     """
-    Loads a text file containing numbers formatted with decimal commas,
+    Loads a text file containing numbers formatted with decimal dcommas,
     separated by arbitrary whitespace (tabs/spaces/newlines), into a 1D array.
     """
     text = Path(path).read_text(encoding="utf-8", errors="ignore").strip()
