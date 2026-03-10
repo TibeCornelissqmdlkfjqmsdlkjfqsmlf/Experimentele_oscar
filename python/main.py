@@ -41,43 +41,50 @@ def load_decimal_comma_stream(path: str | Path) -> np.ndarray:
     vals = np.array([float(tok.replace(",", ".")) for tok in tokens], dtype=float)
     return vals
 
-
 def load_data_set():
+
     to_plot = {
-        ("../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_",""): 
-            [
-                "1","3","2","4"
-            ],
+        ("../ruwe_data/mod-dbm-LP_30.0W/cf_2870-md_65-dbm_","-N_1-ds_600-mr_2"): ["8","16"],
+        ("../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_",""): ["1","3"],
     }
-
     datasets = []
+    fig, axes = plt.subplots(1,len(to_plot),figsize=(10,10))
 
-    for( prefix, suffix ), labels in to_plot.items():
-        for (prefix, suffix), labels in to_plot.items():
-            folders = [Path(prefix + label + suffix) for label in labels]
+    axis_index = 0
 
-            for folder, f_label in zip(folders, labels):
+    for (prefix, suffix), labels in to_plot.items():
+        folders = [Path(prefix + label + suffix) for label in labels]
+        #axis = axes[axis_index]
+        #axis.grid(True)
+        #axis.set_title(prefix + suffix)
+        for folder, f_label in zip(folders, labels):
 
-                odmr_path = folder / "odmr.txt"
-                sweep_path = folder / "sweep.txt"
+            odmr_path = folder / "odmr.txt"
+            sweep_path = folder / "sweep.txt"
 
-                if not odmr_path.exists() or not sweep_path.exists():
-                    print(f"Missing files in {folder}")
-                    continue
+            if not odmr_path.exists() or not sweep_path.exists():
+                print(f"Missing files in {folder}")
+                continue
 
-                try:
-                    x = load_decimal_comma_stream(str(sweep_path))
-                    y = load_decimal_comma_stream(str(odmr_path))
-                    y_n = normalize(y)
-                except ValueError as e:
-                    print(f"Skipping {folder}: {e}")
-                    continue
+            try:
+                x = load_decimal_comma_stream(str(sweep_path))
+                y = load_decimal_comma_stream(str(odmr_path))
+                y_n = normalize(y)
+            except ValueError as e:
+                print(f"Skipping {folder}: {e}")
+                continue
 
-                if x.size != y.size:
-                    print(f"Length mismatch in {folder}")
-                    continue
+            if x.size != y.size:
+                print(f"Length mismatch in {folder}")
+                continue
 
-                datasets.append((f_label, x, y_n))
+            #axis.plot(x, y_n, linewidth=1, label=f"mr_{f_label}")
+            #axis.legend()
+#
+            #axis_index += 1
+
+
+            datasets.append((f_label, x, y_n))
 
         return datasets
 
@@ -147,6 +154,7 @@ def show():
 
 def main():
     datasets = load_data_set()
+    
     datasets = filter_x_datasets(datasets=datasets,x_min=2860, x_max=2880)
     plot_datasets(datasets=datasets)
 
