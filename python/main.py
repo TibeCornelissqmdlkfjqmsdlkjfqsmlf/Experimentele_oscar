@@ -33,13 +33,19 @@ def load_decimal_comma_stream(path: str | Path) -> np.ndarray:
     return vals
 
 to_plot = {
-    ("../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_",""): ["1","1,1","1,2","1,3","1,4","1,5","1,6","1,7","1,8","1,9","2","2,1","2,2","2,3","2,4","2,5","2,6","2,7","2,8","2,9","3"],
+    ("../ruwe_data/mod-dbm-LP_30.0W/cf_2870-md_65-dbm_","-N_1-ds_600-mr_2"): ["8","16"],
+    ("../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_",""): ["1","3"],
 }
 
+fig, axes = plt.subplots(1,len(to_plot),figsize=(10,10))
+
+axis_index = 0
 
 for (prefix, suffix), labels in to_plot.items():
     folders = [Path(prefix + label + suffix) for label in labels]
-
+    axis = axes[axis_index]
+    axis.grid(True)
+    axis.set_title(prefix + suffix)
     for folder, f_label in zip(folders, labels):
 
         odmr_path = os.path.join(folder, "odmr.txt")
@@ -62,14 +68,16 @@ for (prefix, suffix), labels in to_plot.items():
             print(f"Length mismatch in {folder}")
             continue
 
-        plt.plot(x_n, y_n, linewidth=1, label=f"mr_{f_label}") 
+        axis.plot(x_n, y_n, linewidth=1, label=f"mr_{f_label}")
+        axis.legend()
+
+    axis_index += 1
 
 
 
 
 plt.xlabel("Frequency (same units as SWEEP file)")
 plt.ylabel("ODMR signal (same units as ODMR file)")
-plt.title("ODMR vs SWEEP (All mr values)")
 plt.grid(True)
 plt.legend()
 plt.tight_layout()
