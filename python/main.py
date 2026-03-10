@@ -7,12 +7,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # fit data between 0-1 linear converion factor
-def normalize( data ):
-    min_val = min( data )
-    max_val = max( data )
-    diff = max_val - min_val
+def normalize(data):
+    data = np.asarray(data, dtype=float)
 
-    result = [ (d-min_val)/(diff) for d in data ]
+    max_val = data.max()
+
+    if max_val == 0:
+        return np.zeros_like(data)
+
+    return data / max_val
+def normalize_between( data, middle ):
+    s = sum( data )
+    av = s/ len(data)
+    dist = av - middle
+    result = [ d - dist for d in data ]
+
     return result
     
 
@@ -32,73 +41,116 @@ def load_decimal_comma_stream(path: str | Path) -> np.ndarray:
     vals = np.array([float(tok.replace(",", ".")) for tok in tokens], dtype=float)
     return vals
 
-to_plot = {
-    ("../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_",""): ["1","1,1","1,2","1,3","1,4","1,5","1,6","1,7","1,8","1,9","2","2,1","2,2","2,3","2,4","2,5","2,6","2,7","2,8","2,9","3"],
-}
+
+def load_data_set():
+    to_plot = {
+        ("../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_",""): 
+            [
+                "1","3","2","4"
+            ],
+    }
+
+    datasets = []
+
+    for( prefix, suffix ), labels in to_plot.items():
+        for (prefix, suffix), labels in to_plot.items():
+            folders = [Path(prefix + label + suffix) for label in labels]
+
+            for folder, f_label in zip(folders, labels):
+
+                odmr_path = folder / "odmr.txt"
+                sweep_path = folder / "sweep.txt"
+
+                if not odmr_path.exists() or not sweep_path.exists():
+                    print(f"Missing files in {folder}")
+                    continue
+
+                try:
+                    x = load_decimal_comma_stream(str(sweep_path))
+                    y = load_decimal_comma_stream(str(odmr_path))
+                    y_n = normalize(y)
+                except ValueError as e:
+                    print(f"Skipping {folder}: {e}")
+                    continue
+
+                if x.size != y.size:
+                    print(f"Length mismatch in {folder}")
+                    continue
+
+                datasets.append((f_label, x, y_n))
+
+        return datasets
+
+def plot_datasets(datasets):
+    plt.figure()
+
+    for label, x, y in datasets:
+        plt.plot(x, y, linewidth=1, label=f"mr_{label}")
+
+def filter_x_datasets(datasets, x_min, x_max ):
+    filtered = []
+    
+    for label, x, y in datasets:
+        mask = ( x >= x_min ) & ( x <= x_max )
+        x_f = x[mask]
+        y_f = y[mask]
+        
+        filtered.append((label, x_f,y_f))
+
+    return filtered
 
 
-for (prefix, suffix), labels in to_plot.items():
-    folders = [Path(prefix + label + suffix) for label in labels]
+def plot_f():
+    to_plot = {
+        ("../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_",""): 
+            [
+                "1","3","2","4"
+            ],
+    }
+    for (prefix, suffix), labels in to_plot.items():
+        folders = [Path(prefix + label + suffix) for label in labels]
 
-    for folder, f_label in zip(folders, labels):
+        for folder, f_label in zip(folders, labels):
 
-        odmr_path = os.path.join(folder, "odmr.txt")
-        sweep_path = os.path.join(folder, "sweep.txt")
+            odmr_path = os.path.join(folder, "odmr.txt")
+            sweep_path = os.path.join(folder, "sweep.txt")
 
-        if not os.path.exists(odmr_path) or not os.path.exists(sweep_path):
-            print(f"Missing files in {folder}")
-            continue
+            if not os.path.exists(odmr_path) or not os.path.exists(sweep_path):
+                print(f"Missing files in {folder}")
+                continue
 
-        try:
-            x = load_decimal_comma_stream(sweep_path)
-            x_n = normalize(x)
-            y = load_decimal_comma_stream(odmr_path)
-            y_n = normalize(y)
-        except ValueError as e:
-            print(f"Skipping {folder}: {e}")
-            continue
+            try:
+                x = load_decimal_comma_stream(sweep_path)
+                y = load_decimal_comma_stream(odmr_path)
+                y_n = normalize(y)
+            except ValueError as e:
+                print(f"Skipping {folder}: {e}")
+                continue
 
-        if x.size != y.size:
-            print(f"Length mismatch in {folder}")
-            continue
+            if x.size != y.size:
+                print(f"Length mismatch in {folder}")
+                continue
 
-        plt.plot(x_n, y_n, linewidth=1, label=f"mr_{f_label}") 
+            plt.plot(x, y_n, linewidth=1, label=f"mr_{f_label}") 
 
-fold_front = "../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_"
-freq = ["1","1,1","1,2","1,3","1,4","1,5","1,6","1,7","1,8","1,9","2","2,1","2,2","2,3","2,4","2,5","2,6","2,7","2,8","2,9","3"]
+    
 
-folders = [fold_front + f for f in freq ]
-plt.figure()
+def show():
+    plt.xlabel("Frequency (same units as SWEEP file)")
+    plt.ylabel("ODMR signal (same units as ODMR file)")
+    plt.title("ODMR vs SWEEP (All mr values)")
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+    plt.show()
 
-for folder, f_label in zip(folders, freq):
+def main():
+    datasets = load_data_set()
+    datasets = filter_x_datasets(datasets=datasets,x_min=2860, x_max=2880)
+    plot_datasets(datasets=datasets)
 
-    odmr_path = os.path.join(folder, "odmr.txt")
-    sweep_path = os.path.join(folder, "sweep.txt")
+    show()
 
-    if not os.path.exists(odmr_path) or not os.path.exists(sweep_path):
-        print(f"Missing files in {folder}")
-        continue
 
-    try:
-        x = load_decimal_comma_stream(sweep_path)
-        x_n = normalize(x)
-        y = load_decimal_comma_stream(odmr_path)
-        y_n = normalize(y)
-    except ValueError as e:
-        print(f"Skipping {folder}: {e}")
-        continue
-
-    if x.size != y.size:
-        print(f"Length mismatch in {folder}")
-        continue
-
-    plt.plot(x_n, y_n, linewidth=1, label=f"mr_{f_label}")
-
-plt.xlabel("Frequency (same units as SWEEP file)")
-plt.ylabel("ODMR signal (same units as ODMR file)")
-plt.title("ODMR vs SWEEP (All mr values)")
-plt.grid(True)
-plt.legend()
-plt.tight_layout()
-plt.show()
-plt.show()
+main()
