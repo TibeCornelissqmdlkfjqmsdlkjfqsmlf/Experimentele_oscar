@@ -139,9 +139,9 @@ def voigt_fit(relative_path_odmr, relative_path_sweep):
 
     result = find_odmr_peaks(x, y, expected_peaks=24, polyorder=6)
 
-    print("Detected peak positions:")
-    for i, (xp, yp) in enumerate(zip(result["x_peaks"], result["y_peaks"]), start=1):
-        print(f"{i}: x = {xp:.6f}, y = {yp:.6f}")
+    #print("Detected peak positions:")
+    #for i, (xp, yp) in enumerate(zip(result["x_peaks"], result["y_peaks"]), start=1):
+    #    print(f"{i}: x = {xp:.6f}, y = {yp:.6f}")
 
     # choose one detected peak
     peak_number = 17
@@ -173,38 +173,42 @@ def voigt_fit(relative_path_odmr, relative_path_sweep):
     # fitted parameters
     c0_fit, A_fit, f0_fit, sigma_fit, gamma_fit = result_least_squares.x
 
-    print("\nFitted parameters:")
-    print(f"c0    = {c0_fit}")
-    print(f"A     = {A_fit}")
-    print(f"f0    = {f0_fit}")
-    print(f"sigma = {sigma_fit}")
-    print(f"gamma = {gamma_fit}")
+    #print("\nFitted parameters:")
+    #print(f"c0    = {c0_fit}")
+    #print(f"A     = {A_fit}")
+    #print(f"f0    = {f0_fit}")
+    #print(f"sigma = {sigma_fit}")
+    #print(f"gamma = {gamma_fit}")
 
-    print(f"sensitivity = {sensitivity_from_fit(c0=c0_fit, A=A_fit, sigma=sigma_fit, gamma=gamma_fit, R = photon_rate(50, 480*10**-9))}")
+    contrast , fwhm, sensitivity = sensitivity_from_fit(c0=c0_fit, A=A_fit, sigma=sigma_fit, gamma=gamma_fit, R = photon_rate(50, 480*10**-9))
+
+    #print(f"sensitivity = {sensitivity_from_fit(c0=c0_fit, A=A_fit, sigma=sigma_fit, gamma=gamma_fit, R = photon_rate(50, 480*10**-9))}")
 
     # fitted curve
-    x_dense = np.linspace(x_cut.min(), x_cut.max(), 500)
-    y_dense = voigt_model(x_dense, *result_least_squares.x)
+    #x_dense = np.linspace(x_cut.min(), x_cut.max(), 500)
+    #y_dense = voigt_model(x_dense, *result_least_squares.x)
+#
+    #plt.figure(figsize=(10, 5))
+    #plt.plot(x, result["y_smooth"], label="Smoothed ODMR")
+    #plt.plot(result["x_peaks"], result["y_peaks"], "rx", label="Detected dips")
+    #plt.axvline(f0_guess, linestyle="--", label="Chosen peak")
+    #plt.grid(True)
+    #plt.legend()
+    #plt.tight_layout()
+    #plt.show()
+#
+    #plt.figure(figsize=(8, 5))
+    #plt.plot(x_cut, y_cut, "o", label="Local data")
+    #plt.plot(x_dense, y_dense, "-", label="Voigt fit")
+    #plt.axvline(f0_fit, linestyle="--", label="Fitted f0")
+    #plt.grid(True)
+    #plt.legend()
+    #plt.tight_layout()
+    #plt.show()
 
-    plt.figure(figsize=(10, 5))
-    plt.plot(x, result["y_smooth"], label="Smoothed ODMR")
-    plt.plot(result["x_peaks"], result["y_peaks"], "rx", label="Detected dips")
-    plt.axvline(f0_guess, linestyle="--", label="Chosen peak")
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
+    return contrast, fwhm, sensitivity
 
-    plt.figure(figsize=(8, 5))
-    plt.plot(x_cut, y_cut, "o", label="Local data")
-    plt.plot(x_dense, y_dense, "-", label="Voigt fit")
-    plt.axvline(f0_fit, linestyle="--", label="Fitted f0")
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-    return result_least_squares.x
+    
 
 def contrast_from_voigt_profile(c0, A, sigma, gamma):
     dip_depth = A * voigt_profile(0.0, sigma, gamma )
@@ -222,24 +226,30 @@ def sensitivity_from_fit(c0, A, sigma, gamma, R):
     C = contrast_from_voigt_profile(c0, A, sigma, gamma)
     fwhm = FWHM_from_voit_profile(sigma, gamma)
     sens = fwhm / (C * np.sqrt(R))
-    return sens
+    return C, fwhm, sens
 
 def main():
     odmr_paths = []
     sweep_paths = []
 
-    base_paths = []
-    base_paths.append(Path("../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_1"))
+    results = []
 
-    for base_path in base_paths:
+    base_paths = []
+    base_paths.append((Path("../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_1"),"Name"))
+
+    for base_path, name in base_paths:
+        odmr_path = Path( base_path / "odmr.txt")
+        sweep_path = Path( base_path / "sweep.txt")
         odmr_paths.append( Path( base_path / "odmr.txt") )
         sweep_paths.append( Path( base_path / "sweep.txt") )
+
+        results.append((voigt_fit( odmr_path, sweep_path ), name) )
         
-
-    
-
-    voigt_fit(odmr_path, sweep_path)
-
+    for (constrast, fwhm, sens), name in results:
+        print(f"name plot : {name}")
+        print( f"\tconstrats = {constrast}")
+        print(f"\tfull width half maximum = {fwhm}")
+        print(f"\tsens = { sens }")
 
 main()
     
