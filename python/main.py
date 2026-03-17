@@ -5,6 +5,15 @@ import os
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+from scipy.special import voigt_profile
+from scipy.signal import find_peaks, savgol_filter
+
+
+
+
+
+
 
 # fit data between 0-1 linear converion factor
 def normalize(data):
@@ -41,22 +50,23 @@ def load_decimal_comma_stream(path: str | Path) -> np.ndarray:
     vals = np.array([float(tok.replace(",", ".")) for tok in tokens], dtype=float)
     return vals
 
-def load_data_set():
+def load_data_sets():
 
     to_plot = {
-        ("../ruwe_data/mod-dbm-LP_30.0W/cf_2870-md_65-dbm_","-N_1-ds_600-mr_2"): ["8","16"],
-        ("../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_",""): ["1","3"],
+        ("../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_",""): ["1","3"]
+        #("../ruwe_data/mod-dbm-LP_30.0W/cf_2870-md_65-dbm_","-N_1-ds_600-mr_2"): ["8","16"],
     }
-    datasets = []
-    fig, axes = plt.subplots(1,len(to_plot),figsize=(10,10))
+    datasets = {}
+    #fig, axes = plt.subplots(1,len(to_plot),figsize=(10,10))
 
-    axis_index = 0
+    #axis_index = 0
 
     for (prefix, suffix), labels in to_plot.items():
         folders = [Path(prefix + label + suffix) for label in labels]
         #axis = axes[axis_index]
         #axis.grid(True)
         #axis.set_title(prefix + suffix)
+        group_data = []
         for folder, f_label in zip(folders, labels):
 
             odmr_path = folder / "odmr.txt"
@@ -82,11 +92,10 @@ def load_data_set():
             #axis.legend()
 #
             #axis_index += 1
+            group_data.append((f_label,x,y_n))
+        datasets[(prefix, suffix)] = group_data
 
-
-            datasets.append((f_label, x, y_n))
-
-        return datasets
+    return datasets
 
 def plot_datasets(datasets):
     plt.figure()
@@ -94,17 +103,44 @@ def plot_datasets(datasets):
     for label, x, y in datasets:
         plt.plot(x, y, linewidth=1, label=f"mr_{label}")
 
-def filter_x_datasets(datasets, x_min, x_max ):
-    filtered = []
+def plot_data_sets_sub_plots(datasets):
+    fig, axes = plt.subplots(1,len(datasets), figsize=(10,10))
+    axis_index = 0
+    if len(datasets) == 1:
+        axes = [axes]
     
-    for label, x, y in datasets:
-        mask = ( x >= x_min ) & ( x <= x_max )
-        x_f = x[mask]
-        y_f = y[mask]
-        
-        filtered.append((label, x_f,y_f))
+    print( len(datasets) )
+    for ax, ((prefix, suffix), data) in zip(axes, datasets.items()):
+        axis = axes[axis_index]
+        axis.grid(True)
+        axis.set_title(prefix+suffix)
+        for label, x, y in data:
+            ax.plot(x,y, label=f"mr_{label}")
+        axis.legend()
 
-    return filtered
+        axis_index += 1
+        
+    return
+
+
+def filter_x_datasets(datasets, x_min, x_max ):
+    filtered_datasets = {}
+
+    for ((prefix, suffix), data) in datasets.items():
+
+        filtered_arrays = []
+
+        for label, x, y in data:
+            mask = ( x >= x_min ) & ( x <= x_max )
+            x_f = x[mask]
+            y_f = y[mask]
+            
+            filtered_arrays.append((label, x_f,y_f))
+        
+        filtered_datasets[(prefix,suffix)] = filtered_arrays
+
+    
+    return filtered_datasets
 
 
 def plot_f():
@@ -140,8 +176,42 @@ def plot_f():
 
             plt.plot(x, y_n, linewidth=1, label=f"mr_{f_label}") 
 
-    
+def find_peeks_data(data):
+    expected_count = 8
+    labels, xdata, ydata = data
 
+    y_smooth = savgol_filter(ydata, 11, 13)
+    y_inv = -y_smooth
+
+    peaks, props = find_peaks(
+        y_inv,
+        prominence=0.003,
+        distance=(len(xdata)//20)
+    )
+
+    if len(peaks) > expected_count:
+        order = np.argsort(props["prominences"])[::-1]
+        peaks = peaks[order[:expected_count]]
+
+    # sort by frequency
+    peaks = np.sort(peaks)
+
+    return peaks, y_smooth
+
+def find_peeks_dataset(datasets):
+
+    results = {}
+
+    for group_key, group_data in datasets.items():
+        group_results = []
+
+        for data in group_data:
+            result = find_peeks_data(data)
+            group_results.append(result)
+
+        results[group_key] = group_results
+
+    return results
 def show():
     plt.xlabel("Frequency (same units as SWEEP file)")
     plt.ylabel("ODMR signal (same units as ODMR file)")
@@ -153,10 +223,12 @@ def show():
     plt.show()
 
 def main():
-    datasets = load_data_set()
-    
-    datasets = filter_x_datasets(datasets=datasets,x_min=2860, x_max=2880)
-    plot_datasets(datasets=datasets)
+    datasets = load_data_sets()
+    datasets = filter_x_datasets(datasets=datasets, x_min=2300, x_max=3000 )
+    find_peeks_dataset(datasets=datasets)
+    plot_data_sets_sub_plots(datasets=datasets)
+    #datasets = filter_x_datasets(datasets=datasets,x_min=2860, x_max=2880)
+    #plot_datasets(datasets=datasets)
 
     show()
 
