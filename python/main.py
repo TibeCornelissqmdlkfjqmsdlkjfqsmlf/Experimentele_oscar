@@ -32,12 +32,17 @@ def load_decimal_comma_stream(path: str | Path) -> np.ndarray:
     vals = np.array([float(tok.replace(",", ".")) for tok in tokens], dtype=float)
     return vals
 
+# Folder/file(param from n to p ) back -> "Folder/file","back" : [param] -> Folder/file(param)
 to_plot = {
-    ("../ruwe_data/mod-dbm-LP_30.0W/cf_2870-md_65-dbm_","-N_1-ds_600-mr_2"): ["8","16"],
-    ("../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_",""): ["1","3"],
+    ("../ruwe_data/data bepalen sensitivity\data_MWP_bij_I=50/cf_2870-md_73-dbm_","-N_2-ds_600-mr_2-LP_45"):["8","16"],
+    #("../ruwe_data/mod-dbm-LP_30.0W/cf_2870-md_65-dbm_","-N_1-ds_600-mr_2"): ["8","16"],
+    #("../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_",""): ["1","3"],
+
 }
 
 fig, axes = plt.subplots(1,len(to_plot),figsize=(10,10))
+if len(to_plot) == 1:
+    axes = [axes]
 
 axis_index = 0
 
