@@ -4,3 +4,13 @@ dbm ~ amplitude
 N ~ Number of sweeps
 ds ~ decimating size
 mr ~ modulation rate (HZ)
+als power niet spêcifiek erin staat --> LaserPower (LP) = 38.89
+bij te hoge LP draait de grafiek om door de meetapparatuur, we gebruiken een maximum LP afhankelijk van de microwaves (amplitude op functiegenerator)
+
+deviation 64	
+
+c-contrast(lengte piek)
+FVHN?? - linewidth (breedte piek)
+R=I - intensiteit (hoogste waarde)_(R(in aantal fotonen), I(in V))
+
+pot- laser intensiteit in qudi
