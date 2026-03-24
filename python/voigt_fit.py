@@ -217,7 +217,6 @@ def FWHM_from_voit_profile(sigma, gamma):
     gamma_L = 2.0 * gamma
     gamma_G = 2.0 * np.sqrt(2.0 * np.log(2.0)) * sigma
     return 0.5346 * gamma_L + np.sqrt(0.2166 * gamma_L**2 + gamma_G**2)
-
 def photon_rate( power, wave_length ):
     return (power * wave_length )/ ( constants.h * constants.c )
 
@@ -228,14 +227,26 @@ def sensitivity_from_fit(c0, A, sigma, gamma, R):
     sens = fwhm / (C * np.sqrt(R))
     return C, fwhm, sens
 
+def plot(x,y):
+    plt.figure(figsize=(10,5))
+    plt.plot(x,y)
+    plt.show()
+
 def main():
     odmr_paths = []
     sweep_paths = []
 
     results = []
 
+    lp = []
+
     base_paths = []
-    base_paths.append((Path("../ruwe_data/mod-mr/cf_2870-md_65-dbm_16-N_1-ds_600-mr_1"),"Name"))
+    base_paths.append((Path("../ruwe_data/mod-LP-bdm-15(2)/cf_2870-md_65-dbm_14-N_1-ds_600-mr_2-LP_27"),"LP 27"))
+    lp.append(27)
+    base_paths.append((Path("../ruwe_data/mod-LP-bdm-15(2)/cf_2870-md_65-dbm_14-N_1-ds_600-mr_2-LP_33"),"LP 33"))
+    lp.append(33)
+    base_paths.append((Path("../ruwe_data/mod-LP-bdm-15(2)/cf_2870-md_65-dbm_14-N_1-ds_600-mr_2-LP_40"),"LP 40"))
+    lp.append(40)
 
     for base_path, name in base_paths:
         odmr_path = Path( base_path / "odmr.txt")
@@ -244,12 +255,24 @@ def main():
         sweep_paths.append( Path( base_path / "sweep.txt") )
 
         results.append((voigt_fit( odmr_path, sweep_path ), name) )
+
+
+    names = [name for (_, name) in results]
+    contrasts = [contrast for ((contrast, _, _), _) in results]
+    fwhms = [fwhm for ((_, fwhm, _), _) in results]
+    senses = [sens for ((_, _, sens), _) in results]
+
+
         
-    for (constrast, fwhm, sens), name in results:
+    for (contrast, fwhm, sens), name in results:
         print(f"name plot : {name}")
-        print( f"\tconstrats = {constrast}")
+        print( f"\tconstrats = {contrast}")
         print(f"\tfull width half maximum = {fwhm}")
         print(f"\tsens = { sens }")
+
+    plot( lp, fwhms )
+
+
 
 main()
     
